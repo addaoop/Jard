@@ -12,51 +12,37 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v3
 
-      - name: Install Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install System Packages
+      - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y zip unzip openjdk-17-jdk wget
-
-      - name: Install Android SDK
-        run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-11076708_latest.zip
-          mv cmdline-tools latest
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          sudo apt install -y build-essential libffi-dev envtpl python3-dev \
+          libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
+          libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev \
+          libbz2-dev expat liblzma-dev tk-dev unzip zip \
+          openjdk-17-jdk
 
       - name: Install Buildozer
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install buildozer cython kivy
 
-      - name: Create buildozer.spec
-        run: |
-          buildozer init
-          sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
-          sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
-          sed -i 's/package.domain = .*/package.domain = org.zummaria/' buildozer.spec
-          sed -i 's/source.include_exts = .*/source.include_exts = py,jpg,png,txt/' buildozer.spec
-          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
-          sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
-
       - name: Build APK
-        env:
-          ANDROID_HOME: ${{ env.HOME }}/android-sdk
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          buildozer -v android debug
+          # هذه الخطوة ستقوم بتحميل الـ SDK تلقائياً والتعامل مع التراخيص
+          # تأكد أن ملف Jard5.py موجود في المستودع (Repository)
+          yes | buildozer -v android debug
+        env:
+          # لتجاوز مشكلة التراخيص برمجياً
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Zummaria-APK
+          name: Zummaria-Inventory-APK
           path: bin/*.apk
+          
