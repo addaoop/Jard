@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential libffi-dev python3-dev \
@@ -31,24 +31,25 @@ jobs:
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer kivy
 
-      - name: Prepare Spec & Fix Arabic Images Path
+      - name: Simple Spec Setup
         run: |
+          # حذف أي ملف قديم والبدء من جديد
+          rm -f buildozer.spec
           buildozer init
-          # تعديل الملف ليقبل التراخيص ويشمل الصور
           sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
           sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
           sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
-          # التأكد من تضمين كافة امتدادات الصور التي تستخدمها للغة العربية
+          # تضمين الصور العربية
           sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,jpeg,ttf,json/' buildozer.spec
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+          # السطر السحري لقبول التراخيص داخل الملف
           sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          # تثبيت الإصدار على 33 لضمان وجود aidl
           sed -i 's/#android.api = 31/android.api = 33/' buildozer.spec
 
-      - name: Build APK (Clean & Build)
+      - name: Build APK
         run: |
-          # خطوة التنظيف لضمان عدم وجود ملفات معطوبة من المحاولات السابقة
-          buildozer android clean
-          # الموافقة على التراخيص وبدء البناء
+          # استخدام yes لإجبار النظام على الموافقة دون توقف (حل مشكلة الصورة 1000361003)
           yes | buildozer -v android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
