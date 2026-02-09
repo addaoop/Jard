@@ -9,54 +9,60 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout Project
-        uses: actions/checkout@v3
+    - name: Checkout Project
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential libffi-dev python3-dev \
-          libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
-          libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev \
-          libbz2-dev expat liblzma-dev tk-dev unzip zip \
-          openjdk-17-jdk autoconf libtool pkg-config
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libffi-dev python3-dev \
+        libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
+        libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev \
+        libbz2-dev expat liblzma-dev tk-dev unzip zip \
+        openjdk-17-jdk autoconf libtool pkg-config
 
-      - name: Install Buildozer & Cython
-        run: |
-          pip install --upgrade pip
-          pip install "cython<3.0.0" buildozer kivy
+    - name: Install Buildozer & Cython
+      run: |
+        pip install --upgrade pip
+        pip install "cython<3.0.0" buildozer kivy
 
-      - name: Simple Spec Setup
-        run: |
-          # حذف أي ملف قديم والبدء من جديد
-          rm -f buildozer.spec
-          buildozer init
-          sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
-          sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
-          sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
-          # تضمين الصور العربية
-          sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,jpeg,ttf,json/' buildozer.spec
-          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
-          # السطر السحري لقبول التراخيص داخل الملف
-          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-          # تثبيت الإصدار على 33 لضمان وجود aidl
-          sed -i 's/#android.api = 31/android.api = 33/' buildozer.spec
+    - name: Simple Spec Setup
+      run: |
+        rm -f buildozer.spec
+        buildozer init
 
-      - name: Build APK
-        run: |
-          # استخدام yes لإجبار النظام على الموافقة دون توقف (حل مشكلة الصورة 1000361003)
-          yes | buildozer -v android debug
-        env:
-          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+        # إعدادات التطبيق
+        sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
+        sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Zummaria-APK
-          path: bin/*.apk
-          
+        # 🔥 هنا التعديل المهم بعد إعادة تسمية الملف
+        sed -i 's/source.main = .*/source.main = main.py/' buildozer.spec
+
+        # تضمين الصور والملفات
+        sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,jpeg,ttf,json,txt/' buildozer.spec
+
+        # المتطلبات
+        sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+
+        # قبول رخصة اندرويد تلقائياً
+        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+
+        # تثبيت API متوافق
+        sed -i 's/android.api = .*/android.api = 33/' buildozer.spec
+
+    - name: Build APK
+      run: |
+        yes | buildozer -v android debug
+      env:
+        APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Zummaria-APK
+        path: bin/*.apk
