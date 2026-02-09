@@ -20,20 +20,18 @@ jobs:
       - name: Install Buildozer
         run: |
           sudo apt update
-          sudo apt install -y zip unzip openjdk-17-jdk python3-pip build-essential git
-          pip install buildozer cython
+          sudo apt install -y zip unzip openjdk-17-jdk
+          python -m pip install --upgrade pip
+          pip install buildozer cython kivy
 
-      - name: Initialize Buildozer
+      - name: Create buildozer.spec
         run: |
-          buildozer init || true
-
-      - name: Modify buildozer.spec
-        run: |
-          sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,txt/' buildozer.spec
-          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+          buildozer init
           sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
           sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
           sed -i 's/package.domain = .*/package.domain = org.zummaria/' buildozer.spec
+          sed -i 's/source.include_exts = .*/source.include_exts = py,jpg,png,txt/' buildozer.spec
+          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
 
       - name: Build APK
