@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Project
@@ -17,29 +17,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Android SDK + Buildozer
+      - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y zip unzip openjdk-17-jdk wget
-
-          # Install Android Command Line Tools
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-11076708_latest.zip
-          mv cmdline-tools latest
-
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-          export PATH=$ANDROID_HOME/platform-tools:$PATH
-
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-
-          python -m pip install --upgrade pip
+          sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev
+          pip install --upgrade pip
           pip install buildozer cython kivy
 
-      - name: Create buildozer.spec
+      - name: Init Buildozer
         run: |
           buildozer init
           sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
@@ -48,6 +33,13 @@ jobs:
           sed -i 's/source.include_exts = .*/source.include_exts = py,jpg,png,txt/' buildozer.spec
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
+
+          echo "android.accept_sdk_license = True" >> buildozer.spec
+          echo "android.sdk = 33" >> buildozer.spec
+          echo "android.api = 33" >> buildozer.spec
+          echo "android.minapi = 21" >> buildozer.spec
+          echo "android.ndk = 25b" >> buildozer.spec
+          echo "android.build_tools_version = 33.0.2" >> buildozer.spec
 
       - name: Build APK
         run: |
