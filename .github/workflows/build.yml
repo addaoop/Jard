@@ -24,35 +24,41 @@ jobs:
           libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
           libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev \
           libbz2-dev expat liblzma-dev tk-dev unzip zip \
-          openjdk-17-jdk python3-pip autoconf libtool pkg-config
+          openjdk-17-jdk autoconf libtool pkg-config
 
       - name: Install Buildozer & Cython
         run: |
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer kivy
 
-      - name: Configure Buildozer Spec
+      - name: Force License Agreement & SDK Fix
         run: |
-          # إنشاء ملف الإعدادات برمجياً لأن الصور تظهر عدم وجوده في المستودع
+          # هذه الخطوة هي المفتاح لكسر الدائرة: الموافقة على كافة تراخيص الأندرويد قبل البدء
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          
+          # إنشاء ملف buildozer.spec وإعداد التراخيص داخله فوراً
           buildozer init
           sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
           sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
           sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           
-          # إجبار النظام على قبول التراخيص (حل مشكلة الصورة الأولى)
+          # تفعيل خيار قبول التراخيص داخل ملف الإعدادات (هام جداً)
           sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           
-          # تحديد إصدارات مستقرة للأندرويد
+          # استخدام إصدار SDK مستقر ومعروف لتجنب مشاكل "Aidl not found"
           sed -i 's/#android.api = 31/android.api = 33/' buildozer.spec
           sed -i 's/#android.minapi = 21/android.minapi = 21/' buildozer.spec
 
-      - name: Build with Buildozer
+      - name: Build APK (The Final Attempt)
         run: |
-          # أمر الموافقة التلقائية على أي حزم إضافية
+          # استخدام yes لإجابة أي سؤال يظهر بـ "نعم" تلقائياً
           yes | buildozer -v android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+          # تقليل استهلاك الذاكرة لضمان عدم توقف السيرفر
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Xmx2048m"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
