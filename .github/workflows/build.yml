@@ -1,0 +1,47 @@
+name: Build Android APK (Kivy)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install Buildozer
+        run: |
+          sudo apt update
+          sudo apt install -y zip unzip openjdk-17-jdk python3-pip build-essential git
+          pip install buildozer cython
+
+      - name: Initialize Buildozer
+        run: |
+          buildozer init || true
+
+      - name: Modify buildozer.spec
+        run: |
+          sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,txt/' buildozer.spec
+          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+          sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
+          sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
+          sed -i 's/package.domain = .*/package.domain = org.zummaria/' buildozer.spec
+          sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
+
+      - name: Build APK
+        run: |
+          buildozer -v android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zummaria-APK
+          path: bin/*.apk
