@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # تحديد نسخة مستقرة من نظام التشغيل
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Project
@@ -29,31 +29,30 @@ jobs:
       - name: Install Buildozer & Cython
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0.0" buildozer kivy # نسخة Cython مهمة لاستقرار البناء
+          # استخدام نسخة محددة من Cython لتجنب أخطاء التوافق
+          pip install "cython<3.0.0" buildozer kivy
 
-      - name: Prepare Buildozer Spec
+      - name: Configure Buildozer Spec
         run: |
-          # إذا لم يكن الملف موجوداً سيقوم بإنشائه وتعديله
-          if [ ! -f buildozer.spec ]; then
-            buildozer init
-            sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
-            sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
-            sed -i 's/package.domain = .*/package.domain = org.zummaria/' buildozer.spec
-            sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
-            sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
-            # سطر مهم جداً لتجنب مشاكل الإصدارات:
-            sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-          fi
+          buildozer init
+          # تعديل الملف لإجبار النظام على قبول التراخيص واستخدام إصدارات مستقرة
+          sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
+          sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
+          sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
+          sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+          
+          # أهم سطرين لحل مشكلة الصورة (Aidl & License):
+          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          sed -i 's/#android.api = 31/android.api = 34/' buildozer.spec
+          sed -i 's/#android.build_tools_version = .*/android.build_tools_version = 34.0.0/' buildozer.spec
 
       - name: Build with Buildozer
         run: |
-          # الموافقة على التراخيص يدوياً قبل البدء لضمان عدم توقف العملية
+          # الموافقة التلقائية على أي تراخيص إضافية
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer -v android debug
         env:
-          # متغيرات بيئة إضافية لضمان عمل الأدوات
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
