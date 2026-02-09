@@ -29,27 +29,27 @@ jobs:
       - name: Install Buildozer & Cython
         run: |
           pip install --upgrade pip
-          # استخدام نسخة محددة من Cython لتجنب أخطاء التوافق
           pip install "cython<3.0.0" buildozer kivy
 
       - name: Configure Buildozer Spec
         run: |
+          # إنشاء ملف الإعدادات برمجياً لأن الصور تظهر عدم وجوده في المستودع
           buildozer init
-          # تعديل الملف لإجبار النظام على قبول التراخيص واستخدام إصدارات مستقرة
           sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
           sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
           sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           
-          # أهم سطرين لحل مشكلة الصورة (Aidl & License):
+          # إجبار النظام على قبول التراخيص (حل مشكلة الصورة الأولى)
           sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-          sed -i 's/#android.api = 31/android.api = 34/' buildozer.spec
-          sed -i 's/#android.build_tools_version = .*/android.build_tools_version = 34.0.0/' buildozer.spec
+          
+          # تحديد إصدارات مستقرة للأندرويد
+          sed -i 's/#android.api = 31/android.api = 33/' buildozer.spec
+          sed -i 's/#android.minapi = 21/android.minapi = 21/' buildozer.spec
 
       - name: Build with Buildozer
         run: |
-          # الموافقة التلقائية على أي تراخيص إضافية
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          # أمر الموافقة التلقائية على أي حزم إضافية
           yes | buildozer -v android debug
         env:
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
