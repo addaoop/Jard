@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # تحديد نسخة مستقرة من نظام التشغيل
 
     steps:
       - name: Checkout Project
@@ -17,32 +17,47 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libffi-dev envtpl python3-dev \
+          sudo apt install -y build-essential libffi-dev python3-dev \
           libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev \
           libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev \
           libbz2-dev expat liblzma-dev tk-dev unzip zip \
-          openjdk-17-jdk
+          openjdk-17-jdk python3-pip autoconf libtool pkg-config
 
-      - name: Install Buildozer
+      - name: Install Buildozer & Cython
         run: |
           pip install --upgrade pip
-          pip install buildozer cython kivy
+          pip install "cython<3.0.0" buildozer kivy # نسخة Cython مهمة لاستقرار البناء
 
-      - name: Build APK
+      - name: Prepare Buildozer Spec
         run: |
-          # هذه الخطوة ستقوم بتحميل الـ SDK تلقائياً والتعامل مع التراخيص
-          # تأكد أن ملف Jard5.py موجود في المستودع (Repository)
+          # إذا لم يكن الملف موجوداً سيقوم بإنشائه وتعديله
+          if [ ! -f buildozer.spec ]; then
+            buildozer init
+            sed -i 's/title = .*/title = Zummaria Inventory/' buildozer.spec
+            sed -i 's/package.name = .*/package.name = zummaria/' buildozer.spec
+            sed -i 's/package.domain = .*/package.domain = org.zummaria/' buildozer.spec
+            sed -i 's/source.main = .*/source.main = Jard5.py/' buildozer.spec
+            sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
+            # سطر مهم جداً لتجنب مشاكل الإصدارات:
+            sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          fi
+
+      - name: Build with Buildozer
+        run: |
+          # الموافقة على التراخيص يدوياً قبل البدء لضمان عدم توقف العملية
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer -v android debug
         env:
-          # لتجاوز مشكلة التراخيص برمجياً
+          # متغيرات بيئة إضافية لضمان عمل الأدوات
           APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Zummaria-Inventory-APK
+          name: Zummaria-APK
           path: bin/*.apk
           
